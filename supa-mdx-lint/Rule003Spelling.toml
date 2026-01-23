@@ -311,6 +311,7 @@ allow_list = [
     "SolidJS",
     "Spotify",
     "Sqitch",
+    "Streamable",
     "Supavisor",
     "SvelteKit",
     "SwiftUI",
