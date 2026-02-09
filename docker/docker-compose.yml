@@ -7,32 +7,35 @@ services:
     environment:
       HOSTNAME: '::'
       POSTGRES_PORT: '${POSTGRES_PORT}'
-      POSTGRES_HOST: '${POSTGRES_HOST}'
+      POSTGRES_HOST: 'supabase-db'
       POSTGRES_DB: '${POSTGRES_DB}'
       POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
       PG_META_CRYPTO_KEY: '${PG_META_CRYPTO_KEY}'
-      SUPABASE_URL: 'http://kong:8000'
+      SUPABASE_URL: 'http://supabase-kong:8000'
       SUPABASE_PUBLIC_URL: '${SUPABASE_PUBLIC_URL}'
       SUPABASE_ANON_KEY: '${ANON_KEY}'
       SUPABASE_SERVICE_KEY: '${SERVICE_ROLE_KEY}'
       AUTH_JWT_SECRET: '${JWT_SECRET}'
       NEXT_PUBLIC_ENABLE_LOGS: 'false'
     volumes:
-      - './volumes/snippets:/app/snippets:Z'
-      - './volumes/functions:/app/edge-functions:Z'
+      - './docker/volumes/snippets:/app/snippets:Z'
+      - './docker/volumes/functions:/app/edge-functions:Z'
 
   kong:
     container_name: supabase-kong
     image: 'kong:2.8.1'
     restart: unless-stopped
-    # volumes: removed because handled by Coolify UI Files tab
+    volumes:
+      - './docker/volumes/api/kong.yml:/home/kong/temp.yml:z'
     environment:
       KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
       KONG_PROXY_LISTEN: '0.0.0.0:8000'
       SUPABASE_ANON_KEY: '${ANON_KEY}'
       SUPABASE_SERVICE_KEY: '${SERVICE_ROLE_KEY}'
-    entrypoint: 'bash -c ''eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'''
+    entrypoint: >
+      bash -c 'eval "echo \"$$(cat /home/kong/temp.yml)\"" > /home/kong/kong.yml 
+      && /docker-entrypoint.sh kong docker-start'
 
   auth:
     container_name: supabase-auth
@@ -46,7 +49,7 @@ services:
       GOTRUE_API_PORT: 9999
       API_EXTERNAL_URL: '${API_EXTERNAL_URL}'
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: 'postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}'
+      GOTRUE_DB_DATABASE_URL: 'postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/${POSTGRES_DB}'
       GOTRUE_SITE_URL: '${SITE_URL}'
       GOTRUE_JWT_SECRET: '${JWT_SECRET}'
       GOTRUE_SMTP_HOST: '${SMTP_HOST}'
@@ -62,45 +65,34 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: 'postgres://authenticator:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}'
+      PGRST_DB_URI: 'postgres://authenticator:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/${POSTGRES_DB}'
       PGRST_DB_SCHEMAS: '${PGRST_DB_SCHEMAS}'
       PGRST_JWT_SECRET: '${JWT_SECRET}'
-    command:
-      - postgrest
+    command: ["postgrest"]
 
   edge:
     container_name: supabase-edge-functions
     image: 'supabase/edge-runtime:v1.70.0'
     restart: unless-stopped
     volumes:
-      - './volumes/functions:/home/deno/functions:Z'
+      - './docker/volumes/functions:/home/deno/functions:Z'
     environment:
       JWT_SECRET: '${JWT_SECRET}'
-      SUPABASE_URL: 'http://kong:8000'
+      SUPABASE_URL: 'http://supabase-kong:8000'
       SUPABASE_ANON_KEY: '${ANON_KEY}'
       SUPABASE_SERVICE_ROLE_KEY: '${SERVICE_ROLE_KEY}'
-      SUPABASE_DB_URL: 'postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}'
+      SUPABASE_DB_URL: 'postgresql://postgres:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/${POSTGRES_DB}'
       VERIFY_JWT: '${FUNCTIONS_VERIFY_JWT}'
-    command:
-      - start
-      - '--main-service'
-      - /home/deno/functions/main
+    command: ["start", "--main-service", "/home/deno/functions/main"]
 
   db:
     container_name: supabase-db
     image: 'supabase/postgres:15.8.1.085'
     restart: unless-stopped
     volumes:
-      # roles.sql and jwt.sql removed here because handled by Coolify UI
       - './volumes/db/data:/var/lib/postgresql/data:Z'
     healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - '-U'
-        - postgres
-        - '-h'
-        - localhost
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -117,12 +109,9 @@ services:
         condition: service_healthy
     environment:
       PORT: 4000
-      DATABASE_URL: 'ecto://supabase_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/_supabase'
+      DATABASE_URL: 'ecto://supabase_admin:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/_supabase'
       SECRET_KEY_BASE: '${SECRET_KEY_BASE}'
       VAULT_ENC_KEY: '${VAULT_ENC_KEY}'
       API_JWT_SECRET: '${JWT_SECRET}'
       POOLER_TENANT_ID: '${POOLER_TENANT_ID}'
-    command:
-      - /bin/sh
-      - '-c'
-      - '/app/bin/migrate && /app/bin/server'
+    command: ["/bin/sh", "-c", "/app/bin/migrate && /app/bin/server"]
