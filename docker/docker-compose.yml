@@ -34,6 +34,8 @@ services:
       KONG_PROXY_LISTEN: '0.0.0.0:8000'
       SUPABASE_ANON_KEY: '${ANON_KEY}'
       SUPABASE_SERVICE_KEY: '${SERVICE_ROLE_KEY}'
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     entrypoint: >
       bash -c 'eval "echo \"$$(cat /home/kong/temp.yml)\"" > /home/kong/kong.yml 
       && /docker-entrypoint.sh kong docker-start'
