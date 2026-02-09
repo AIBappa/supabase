@@ -4,8 +4,6 @@ services:
     container_name: supabase-studio
     image: 'supabase/studio:2026.01.27-sha-6aa59ff'
     restart: unless-stopped
-    networks:
-      - supabase_net
     environment:
       HOSTNAME: '::'
       POSTGRES_PORT: '${POSTGRES_PORT}'
@@ -27,8 +25,6 @@ services:
     container_name: supabase-kong
     image: 'kong:2.8.1'
     restart: unless-stopped
-    networks:
-      - supabase_net
     volumes:
       # Removed :z to ensure it is treated strictly as a clean file path
       - './volumes/api/kong.yml:/home/kong/temp.yml'
@@ -46,8 +42,6 @@ services:
     container_name: supabase-auth
     image: 'supabase/gotrue:v2.185.0'
     restart: unless-stopped
-    networks:
-      - supabase_net
     depends_on:
       db:
         condition: service_healthy
@@ -68,8 +62,6 @@ services:
     container_name: supabase-rest
     image: 'postgrest/postgrest:v14.3'
     restart: unless-stopped
-    networks:
-      - supabase_net
     depends_on:
       db:
         condition: service_healthy
@@ -83,8 +75,6 @@ services:
     container_name: supabase-edge-functions
     image: 'supabase/edge-runtime:v1.70.0'
     restart: unless-stopped
-    networks:
-      - supabase_net
     volumes:
       - './volumes/functions:/home/deno/functions:Z'
     environment:
@@ -106,8 +96,6 @@ services:
     container_name: supabase-db
     image: 'supabase/postgres:15.8.1.085'
     restart: unless-stopped
-    networks:
-      - supabase_net
     volumes:
       - './volumes/db/data:/var/lib/postgresql/data:Z'
     healthcheck:
@@ -123,8 +111,6 @@ services:
     container_name: supabase-pooler
     image: 'supabase/supavisor:2.7.4'
     restart: unless-stopped
-    networks:
-      - supabase_net
     depends_on:
       db:
         condition: service_healthy
@@ -136,7 +122,3 @@ services:
       API_JWT_SECRET: '${JWT_SECRET}'
       POOLER_TENANT_ID: '${POOLER_TENANT_ID}'
     command: ["/bin/sh", "-c", "/app/bin/migrate && /app/bin/server"]
-
-networks:
-  supabase_net:
-    external: false
