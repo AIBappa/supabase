@@ -26,14 +26,13 @@ services:
     container_name: supabase-kong
     image: kong:2.8.1
     restart: unless-stopped
-    ports:
-      - ${KONG_HTTP_PORT}:8000/tcp
-      - ${KONG_HTTPS_PORT}:8443/tcp
     volumes:
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      # Critical: Force Kong to listen on the Docker bridge
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
     entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
@@ -102,7 +101,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    # Command removed to use default internal config
 
   supavisor:
     container_name: supabase-pooler
@@ -117,7 +116,5 @@ services:
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       VAULT_ENC_KEY: ${VAULT_ENC_KEY}
       API_JWT_SECRET: ${JWT_SECRET}
+      POOLER_TENANT_ID: ${POOLER_TENANT_ID}
     command: ["/bin/sh", "-c", "/app/bin/migrate && /app/bin/server"]
-
-volumes:
-  db-config:
