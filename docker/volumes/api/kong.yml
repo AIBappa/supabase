@@ -18,7 +18,7 @@ consumers:
 services:
   ## Auth Service
   - name: auth-v1
-    url: http://supabase-auth:9999/
+    url: http://auth:9999/
     routes:
       - name: auth-v1-all
         strip_path: true
@@ -26,7 +26,7 @@ services:
 
   ## REST Database API
   - name: rest-v1
-    url: http://supabase-rest:3000/
+    url: http://rest:3000/
     routes:
       - name: rest-v1-all
         strip_path: true
@@ -34,7 +34,7 @@ services:
 
   ## Studio Dashboard
   - name: dashboard
-    url: http://supabase-studio:3000/
+    url: http://studio:3000/
     routes:
       - name: dashboard-all
         strip_path: true
