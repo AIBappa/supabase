@@ -20,8 +20,8 @@ services:
       AUTH_JWT_SECRET: '${JWT_SECRET}'
       NEXT_PUBLIC_ENABLE_LOGS: 'false'
     volumes:
-      - './docker/volumes/snippets:/app/snippets:Z'
-      - './docker/volumes/functions:/app/edge-functions:Z'
+      - './volumes/snippets:/app/snippets:Z'
+      - './volumes/functions:/app/edge-functions:Z'
 
   kong:
     container_name: supabase-kong
@@ -31,7 +31,7 @@ services:
       - supabase_net
     volumes:
       # Removed :z to ensure it is treated strictly as a clean file path
-      - './docker/volumes/api/kong.yml:/home/kong/temp.yml'
+      - './volumes/api/kong.yml:/home/kong/temp.yml'
     environment:
       KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
@@ -86,7 +86,7 @@ services:
     networks:
       - supabase_net
     volumes:
-      - './docker/volumes/functions:/home/deno/functions:Z'
+      - './volumes/functions:/home/deno/functions:Z'
     environment:
       JWT_SECRET: '${JWT_SECRET}'
       SUPABASE_URL: 'http://supabase-kong:8000'
