@@ -95,7 +95,12 @@ services:
       SUPABASE_DB_URL: 'postgresql://postgres:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/${POSTGRES_DB}'
       VERIFY_JWT: '${FUNCTIONS_VERIFY_JWT}'
     # Updated path to match your folder structure: /main/index.ts
-    command: ["start", "--main-service", "/home/deno/functions/main/index.ts"]
+    command:
+      [
+        "start",
+        "--main-service",
+        "/home/deno/functions/main"
+      ]
 
   db:
     container_name: supabase-db
