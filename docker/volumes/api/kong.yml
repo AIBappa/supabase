@@ -133,15 +133,16 @@ services:
 
   ## Edge Functions routes
   - name: functions-v1
-    _comment: 'Edge Functions: /functions/v1/* -> http://functions:9000/*'
-    url: http://functions:9000/
-    routes:
-      - name: functions-v1-all
-        strip_path: true
-        paths:
-          - /functions/v1/
-    plugins:
-      - name: cors
+  _comment: 'Edge Functions: /functions/v1/* -> http://edge:9000/*'
+  url: http://edge:9000/
+  routes:
+    - name: functions-v1-all
+      strip_path: true
+      paths:
+        - /functions/v1/
+  plugins:
+    - name: cors
+
 
     ## Protected Dashboard - catch all remaining routes
   - name: dashboard
