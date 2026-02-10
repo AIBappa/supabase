@@ -2,159 +2,73 @@ _format_version: '2.1'
 _transform: true
 
 ###
-### Consumers / Users
+### Consumers (Secrets pulled from .env)
 ###
 consumers:
-  - username: DASHBOARD
   - username: anon
     keyauth_credentials:
       - key: $SUPABASE_ANON_KEY
   - username: service_role
     keyauth_credentials:
       - key: $SUPABASE_SERVICE_KEY
+  - username: $DASHBOARD_USERNAME
+    basicauth_credentials:
+      - username: $DASHBOARD_USERNAME
+        password: $DASHBOARD_PASSWORD
 
 ###
-### Access Control List
+### ACLs for routing based on user role
 ###
 acls:
   - consumer: anon
     group: anon
   - consumer: service_role
     group: admin
+  - consumer: $DASHBOARD_USERNAME
+    group: admin
 
 ###
-### Dashboard credentials
-###
-basicauth_credentials:
-  - consumer: DASHBOARD
-    username: $DASHBOARD_USERNAME
-    password: $DASHBOARD_PASSWORD
-
-###
-### API Routes
+### Services and Routes
 ###
 services:
-  ## Open Auth routes
-  - name: auth-v1-open
-    url: http://auth:9999/verify
-    routes:
-      - name: auth-v1-open
-        strip_path: true
-        paths:
-          - /auth/v1/verify
-    plugins:
-      - name: cors
-  - name: auth-v1-open-callback
-    url: http://auth:9999/callback
-    routes:
-      - name: auth-v1-open-callback
-        strip_path: true
-        paths:
-          - /auth/v1/callback
-    plugins:
-      - name: cors
-  - name: auth-v1-open-authorize
-    url: http://auth:9999/authorize
-    routes:
-      - name: auth-v1-open-authorize
-        strip_path: true
-        paths:
-          - /auth/v1/authorize
-    plugins:
-      - name: cors
-
-  ## Secure Auth routes
+  ## Auth Service (Public - No Auth Required)
   - name: auth-v1
-    _comment: 'GoTrue: /auth/v1/* -> http://auth:9999/*'
     url: http://auth:9999/
     routes:
       - name: auth-v1-all
         strip_path: true
-        paths:
-          - /auth/v1/
+        paths: [/auth/v1/]
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: false
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - admin
-            - anon
 
-  ## Secure REST routes
+  ## REST Database API (Protected by JWT in App)
   - name: rest-v1
-    _comment: 'PostgREST: /rest/v1/* -> http://rest:3000/*'
     url: http://rest:3000/
     routes:
       - name: rest-v1-all
         strip_path: true
-        paths:
-          - /rest/v1/
+        paths: [/rest/v1/]
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: true
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - admin
-            - anon
 
-  ## Secure GraphQL routes
-  - name: graphql-v1
-    _comment: 'PostgREST: /graphql/v1/* -> http://rest:3000/rpc/graphql'
-    url: http://rest:3000/rpc/graphql
-    routes:
-      - name: graphql-v1-all
-        strip_path: true
-        paths:
-          - /graphql/v1
-    plugins:
-      - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: true
-      - name: request-transformer
-        config:
-          add:
-            headers:
-              - Content-Profile:graphql_public
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - admin
-            - anon
-
-  ## Edge Functions routes
+  ## Edge Functions (Public)
   - name: functions-v1
-  _comment: 'Edge Functions: /functions/v1/* -> http://edge:9000/*'
-  url: http://edge:9000/
-  routes:
-    - name: functions-v1-all
-      strip_path: true
-      paths:
-        - /functions/v1/
-  plugins:
-    - name: cors
+    url: http://edge:9000/
+    routes:
+      - name: functions-v1-all
+        strip_path: true
+        paths: [/functions/v1/]
+    plugins:
+      - name: cors
 
-
-    ## Protected Dashboard - catch all remaining routes
+  ## Studio Dashboard (Protected by Basic Auth)
   - name: dashboard
-    _comment: 'Studio: /* -> http://studio:3000/*'
     url: http://studio:3000/
     routes:
       - name: dashboard-all
         strip_path: true
-        paths:
-          - /
+        paths: [/]
     plugins:
-      - name: cors
       - name: basic-auth
         config:
           hide_credentials: true
